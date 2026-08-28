@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ settings.site.key_title }}</title>
+  <link rel="icon" href="/assets/{{ settings.site.favicon }}">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand"><a href="/">{{ settings.site.site_title }}</a></div>
+  </header>
+
+  <div class="container">
+    <div class="panel" style="text-align:center; max-width:520px;">
+      {% if error %}
+        <div class="icon-badge icon-badge-error">✕</div>
+        <p class="error">{{ error }}</p>
+        <a class="btn secondary" href="{{ url_for('step_page') }}">Start Over</a>
+      {% else %}
+        <div class="icon-badge icon-badge-success">✓</div>
+        <h2>Your Key Is Ready</h2>
+        <div class="key-display" id="keyBox">{{ key }}</div>
+        <button class="btn" id="copyBtn" onclick="copyKey()">Copy Key</button>
+        <p class="muted" style="margin-top:16px; font-size:0.85rem;">
+          Keep this key safe. It is tied to your device/IP and will expire after the configured validity period.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      let ok = false;
+      try {
+        ok = document.execCommand('copy');
+      } catch (e) {
+        ok = false;
+      }
+      document.body.removeChild(textarea);
+      return ok;
+    }
+
+    function showCopied(success) {
+      const btn = document.getElementById('copyBtn');
+      const original = btn.innerText;
+      btn.innerText = success ? 'Copied!' : 'Copy failed - long-press to select';
+      setTimeout(function() { btn.innerText = original; }, 1600);
+    }
+
+    function copyKey() {
+      const text = document.getElementById('keyBox').innerText.trim();
+
+      // navigator.clipboard requires a secure context (https, or localhost).
+      // Over plain http on a phone it silently fails, so always fall back.
+      if (window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function() { showCopied(true); },
+          function() { showCopied(fallbackCopy(text)); }
+        );
+      } else {
+        showCopied(fallbackCopy(text));
+      }
+    }
+  </script>
+</body>
+</html>

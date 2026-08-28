@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ settings.site.step_title }}</title>
+  <link rel="icon" href="/assets/{{ settings.site.favicon }}">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand"><a href="/">{{ settings.site.site_title }}</a></div>
+  </header>
+
+  <div class="container">
+    <div class="panel" style="text-align:left; max-width:560px;">
+      {% if disabled %}
+        <div class="icon-badge icon-badge-error">✕</div>
+        <p class="error" style="text-align:center;">This step is currently disabled. Please check back later.</p>
+      {% else %}
+        <div>{{ settings.step.rules_html | safe }}</div>
+        <form method="POST" action="{{ url_for('step_continue') }}">
+          <button type="submit" class="btn" style="width:100%; margin-top:12px;">Continue Step</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

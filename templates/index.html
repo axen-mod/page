@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ settings.site.index_title }}</title>
+  <link rel="icon" href="/assets/{{ settings.site.favicon }}">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">{{ settings.site.site_title }}</div>
+  </header>
+
+  <div class="container">
+    {% if not maintenance and products|length > 0 %}
+      <div class="hero">
+        <h1>{{ settings.site.site_title }}</h1>
+        <p>Browse our products below and hit Buy Now when you're ready.</p>
+      </div>
+    {% endif %}
+    {% if maintenance %}
+      <div class="empty-state">
+        <h2>We'll be right back</h2>
+        <p>This site is currently under maintenance. Please check again soon.</p>
+      </div>
+    {% elif products|length == 0 %}
+      <div class="empty-state">
+        <h2>No products available</h2>
+        <p>Please check back later.</p>
+      </div>
+    {% else %}
+      <div class="grid">
+        {% for p in products %}
+          <div class="card">
+            <img src="/assets/{{ p.image }}" alt="{{ p.name }}" onerror="this.style.opacity=0.3">
+            <h3>{{ p.name }}</h3>
+            <p class="desc">{{ p.description }}</p>
+            <div class="price">{{ p.price }}</div>
+            <a class="btn" href="{{ url_for('buy_now', product_id=p.id) }}">Buy Now</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</body>
+</html>

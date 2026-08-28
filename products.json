@@ -1,0 +1,22 @@
+[
+  {
+    "id": "prod_1",
+    "name": "Sample Product One",
+    "description": "This is a sample product. Edit or delete it from the admin panel.",
+    "image": "item1.png",
+    "price": "$9.99",
+    "buy_now_url": "https://example.com/buy/1",
+    "enabled": true,
+    "position": 1
+  },
+  {
+    "id": "prod_2",
+    "name": "Sample Product Two",
+    "description": "Another sample product entry.",
+    "image": "item2.png",
+    "price": "$14.99",
+    "buy_now_url": "https://example.com/buy/2",
+    "enabled": true,
+    "position": 2
+  }
+]

@@ -1,0 +1,41 @@
+[
+  {
+    "type": "admin_login",
+    "details": {
+      "username": "admin"
+    },
+    "time": "2026-08-22T05:20:46.576269Z",
+    "ip": "127.0.0.1"
+  },
+  {
+    "type": "settings_updated",
+    "details": {},
+    "time": "2026-08-22T05:21:05.308888Z",
+    "ip": "127.0.0.1"
+  },
+  {
+    "type": "key_page_invalid",
+    "details": {
+      "ip": "127.0.0.1",
+      "param_present": true
+    },
+    "time": "2026-08-22T05:21:18.068807Z",
+    "ip": "127.0.0.1"
+  },
+  {
+    "type": "token_generated",
+    "details": {
+      "token_prefix": "eR0hjyyg"
+    },
+    "time": "2026-08-22T05:21:25.098903Z",
+    "ip": "127.0.0.1"
+  },
+  {
+    "type": "key_generated",
+    "details": {
+      "key": "D1W8-DI9Q-C1DI-E9UH"
+    },
+    "time": "2026-08-22T05:21:29.754832Z",
+    "ip": "127.0.0.1"
+  }
+]

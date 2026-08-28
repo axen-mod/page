@@ -1,0 +1,23 @@
+{
+  "site": {
+    "site_title": "My Product Shop",
+    "index_title": "Home - My Product Shop",
+    "step_title": "Continue - My Product Shop",
+    "key_title": "Get Your Key",
+    "logo": "logo.png",
+    "favicon": "favicon.png",
+    "maintenance_mode": false
+  },
+  "step": {
+    "rules_html": "<p>Please follow the steps below to continue:</p><ol><li>Click the button below.</li><li>Wait for the redirect.</li><li>Follow the destination page instructions.</li></ol>",
+    "destination_url": "https://example.com/continue",
+    "token_validity_minutes": 8,
+    "enabled": true
+  },
+  "key": {
+    "token_param_name": "pid",
+    "key_validity_hours": 24.0,
+    "bind_ip": true
+  },
+  "admin_session_hours": 12
+}

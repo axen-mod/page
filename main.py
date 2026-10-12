@@ -109,6 +109,8 @@ if USE_REDIS:
 
 _LIST_TYPES = {"logs"}
 _locks = {name: threading.Lock() for name in DATA_FILES}
+# Protect first-login device binding from concurrent requests in this app process.
+DEVICE_BIND_LOCK = threading.Lock()
 
 # --------------------------------------------------------------------------
 # Safe JSON storage helpers
@@ -424,7 +426,10 @@ def key_page():
     validity_hours = float(settings["key"].get("key_validity_hours", 24))
     now = time.time()
     keys[new_key] = {
-        "ip": client_ip if settings["key"].get("bind_ip", True) else None,
+        # Key generation-এর সময় IP/device lock হবে না; প্রথম successful login-এ device lock হবে।
+        "ip": None,
+        "device_id": None,
+        "device_locked_at": None,
         "created_at": now,
         "expires_at": now + validity_hours * 3600,
         "status": "active",
@@ -440,36 +445,59 @@ def key_page():
 
 @app.route("/api/verify", methods=["POST"])
 def api_verify():
+    """Verify a key and bind it to the first device that successfully uses it.
+
+    Client must send a stable app-generated device_id with every login request.
+    IP is deliberately NOT used as the lock, so network/IP changes are allowed.
+    """
     payload = request.get_json(silent=True) or request.form
-    key = (payload.get("key") or "").strip()
-    ip = (payload.get("ip") or "").strip()
+    key = (payload.get("key") or "").strip().upper()
+    device_id = (payload.get("device_id") or "").strip()
 
     if not key:
         return jsonify({"success": False, "reason": "missing_key"}), 400
+    if not device_id:
+        return jsonify({"success": False, "reason": "missing_device_id",
+                        "message": "Send a stable device_id with every login."}), 400
+    if len(device_id) > 200:
+        return jsonify({"success": False, "reason": "invalid_device_id"}), 400
 
-    keys = cleanup_keys()
-    info = keys.get(key)
-    settings = load_settings()
+    # Lock the read/check/write sequence so two requests in this process cannot
+    # bind the same unbound key to different devices at the same time.
+    with DEVICE_BIND_LOCK:
+        keys = cleanup_keys()
+        info = keys.get(key)
+        if not info:
+            log_event("key_verify_fail", {"reason": "not_found"})
+            return jsonify({"success": False, "reason": "invalid_key"}), 404
 
-    if not info:
-        log_event("key_verify_fail", {"reason": "not_found"})
-        return jsonify({"success": False, "reason": "invalid_key"}), 404
+        if info.get("status") != "active":
+            log_event("key_verify_fail", {"reason": "inactive", "key": key})
+            return jsonify({"success": False, "reason": "key_inactive_or_expired"}), 403
 
-    if info.get("status") != "active":
-        log_event("key_verify_fail", {"reason": "inactive", "key": key})
-        return jsonify({"success": False, "reason": "key_inactive_or_expired"}), 403
+        bound_device = info.get("device_id")
+        if bound_device and not secrets.compare_digest(str(bound_device), device_id):
+            log_event("key_verify_fail", {"reason": "device_mismatch", "key": key})
+            return jsonify({"success": False, "reason": "device_mismatch",
+                            "message": "This key is already locked to another device."}), 403
 
-    if settings["key"].get("bind_ip", True) and info.get("ip"):
-        if not ip or ip != info["ip"]:
-            log_event("key_verify_fail", {"reason": "ip_mismatch", "key": key})
-            return jsonify({"success": False, "reason": "ip_mismatch"}), 403
+        first_device_bind = not bound_device
+        if first_device_bind:
+            info["device_id"] = device_id
+            info["device_locked_at"] = time.time()
+            # Legacy IP binding is cleared; IP/network changes must not block login.
+            info["ip"] = None
+            keys[key] = info
+            save_json("keys", keys)
+            log_event("key_device_bound", {"key": key})
 
-    log_event("key_verify_success", {"key": key})
+    log_event("key_verify_success", {"key": key, "first_device_bind": first_device_bind})
     return jsonify({
         "success": True,
         "expires_at": info.get("expires_at"),
+        "device_locked": True,
+        "first_device_bind": first_device_bind,
     })
-
 
 # --------------------------------------------------------------------------
 # Admin: auth
@@ -667,8 +695,10 @@ def admin_keys_unbind(key):
     keys = load_json("keys")
     if key in keys:
         keys[key]["ip"] = None
+        keys[key]["device_id"] = None
+        keys[key]["device_locked_at"] = None
         save_json("keys", keys)
-        log_event("admin_key_unbound", {"key": key})
+        log_event("admin_key_device_reset", {"key": key})
     return redirect(url_for("admin_keys"))
 
 

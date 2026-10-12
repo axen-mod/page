@@ -171,7 +171,9 @@
           <h3>Step / Token Settings</h3>
           <label>Rules HTML</label><textarea name="rules_html" rows="4">{{ settings.step.rules_html }}</textarea>
           <label>Destination URL (after Continue)</label><input type="text" name="destination_url" value="{{ settings.step.destination_url }}">
-          <label>Token Validity (minutes)</label><input type="number" name="token_validity_minutes" value="{{ settings.step.token_validity_minutes }}">
+          <label>Key Link Time Window (minutes)</label>
+          <input type="number" name="token_validity_minutes" min="1" max="1440" required value="{{ settings.step.token_validity_minutes }}">
+          <small class="muted" style="display:block;margin-top:6px;">Continue Step ক্লিক করার পর এই সময়ের মধ্যে /key?A+USER খুললে Key দেওয়া হবে। সময় শেষ হলে লিংকটি কাজ করবে না। (1–1440 minutes)</small>
           <label class="checkbox-row"><input type="checkbox" name="step_enabled" {{ 'checked' if settings.step.enabled }}> Token/Step System Enabled</label>
         </div>
 

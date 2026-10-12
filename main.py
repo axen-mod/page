@@ -394,29 +394,26 @@ def step_continue():
 @app.route("/key")
 def key_page():
     settings = load_settings()
-    param_name = settings["key"].get("token_param_name", "token")
-    # Only checks that the parameter KEY is present in the URL at all -
-    # "?pid" or "?pid=" or "?pid=anything" all count. The value is never
-    # compared to anything; only presence of the name matters here.
-    param_present = param_name in request.args
     client_ip = get_client_ip()
+
+    # The public key URL must be exactly /key?A+USER (raw query string).
+    # The Continue Step action creates a server-side, IP-bound time window.
+    expected_query = b"A+USER"
+    correct_link = request.query_string == expected_query
 
     tokens = cleanup_tokens()
     matched_token, info = find_active_token_for_ip(tokens, client_ip)
-
-    # Single generic message on purpose: we don't want to reveal *why* a
-    # link failed (missing param / no token for this IP / expired) since
-    # that helps someone probe the token system.
     generic_error = "This link is invalid, expired, or was already used. Please start over."
 
-    valid = param_present and matched_token is not None
-
-    if not valid:
-        log_event("key_page_invalid", {"ip": client_ip, "param_present": param_present})
+    if not correct_link or matched_token is None:
+        log_event("key_page_invalid", {
+            "ip": client_ip,
+            "correct_link": correct_link,
+            "has_active_session": matched_token is not None,
+        })
         return render_template("key.html", settings=settings, error=generic_error, key=None)
 
-    # Matched: consume this IP's token immediately so it can never be
-    # reused, and drop it from tokens.json entirely.
+    # One-time use: consume the Continue Step token before issuing a key.
     del tokens[matched_token]
     save_json("tokens", tokens)
 
@@ -434,7 +431,6 @@ def key_page():
     }
     save_json("keys", keys)
     log_event("key_generated", {"key": new_key})
-
     return render_template("key.html", settings=settings, error=None, key=new_key)
 
 
@@ -707,7 +703,7 @@ def admin_settings():
 
         settings["step"]["rules_html"] = form.get("rules_html", settings["step"]["rules_html"])
         settings["step"]["destination_url"] = form.get("destination_url", settings["step"]["destination_url"])
-        settings["step"]["token_validity_minutes"] = int(form.get("token_validity_minutes") or settings["step"]["token_validity_minutes"])
+        settings["step"]["token_validity_minutes"] = max(1, min(1440, int(form.get("token_validity_minutes") or settings["step"]["token_validity_minutes"])))
         settings["step"]["enabled"] = form.get("step_enabled") == "on"
 
         settings["key"]["token_param_name"] = form.get("token_param_name", settings["key"]["token_param_name"]) or "token"
